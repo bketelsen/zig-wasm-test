@@ -1,5 +1,5 @@
 const std = @import("std");
-
+const mem = @import("std").mem;
 extern fn trace(usize,i32) void;
 extern fn debug(u32) void;
 extern fn __wbindgen_boolean_new(u32) u32;
@@ -28,10 +28,15 @@ export const JSValue = struct {
   }
   fn truevalue() JSValue {
     return JSValue {
-    .idx = nanHead << 32 | JSIDX_TRUE,
-    };
+    .idx = nanHead << 32 | JSIDX_TRUE, };
   }
 };
+
+export fn getStringPointer(l: u32) usize {
+  var s: [100]u8 = []u8{0} ** 100;
+  const ss = s[0..l];
+ return @ptrToInt(&s);
+}
 const nanHead: u32 = 0x7FF80000;
 
 const JSIDX_OFFSET: u32 = 0; // keep in sync with js/mod.rs
@@ -46,6 +51,15 @@ fn truth(b: JSValue) bool {
     return b.truthy();
       
 }
+
+export fn stringLengthIsFive(p: usize, l: u32) bool {
+    const ptr = @intToPtr(*[100]u8,p);
+    const sl = ptr[0..l];
+    return sl.len == 5;
+
+}
+
+
 
 // This should be generated
 // It's the shim for the JS Side to call

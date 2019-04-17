@@ -16,8 +16,8 @@ let cachedUint8Memory = null;
 
 function getUint8Memory() {
     if (cachedUint8Memory === null ||
-        cachedUint8Memory.buffer !== wasm.memory.buffer)
-        cachedUint8Memory = new Uint8Array(wasm.memory.buffer);
+        cachedUint8Memory.buffer !== memory.buffer)
+        cachedUint8Memory = new Uint8Array(memory.buffer);
     return cachedUint8Memory;
 }
 
@@ -77,9 +77,8 @@ function bincode_to_json(arg0) {
 let cachedEncoder = new TextEncoder('utf-8');
 
 function passStringToWasm(arg) {
-
     const buf = cachedEncoder.encode(arg);
-    const ptr = wasm.__wbindgen_malloc(buf.length);
+    const ptr = exports.getStringPointer(buf.length);
     getUint8Memory().set(buf, ptr);
     return [ptr, buf.length];
 }
@@ -261,6 +260,11 @@ function etrue(arg0) {
     return ret;
 }
 
+function estringLength(arg0) {
+    [p,l] = passStringToWasm(arg0);
+    const ret = exports.stringLengthIsFive(p,l);
+    return ret;
+}
 
 const importObject = {
     env: {
@@ -295,6 +299,8 @@ fetch("wasmtest.wasm")
         instance = results.instance;
         exports = instance.exports;
         memory = exports.memory;
-        console.log(!!etrue(false));
-        console.log(!!etrue(true));
+        console.log("False: ", !!etrue(false));
+        console.log("True:", !!etrue(true));
+        console.log("brian is 5 characters:", !!estringLength("brian"));
+        console.log("brian ketelsen is 5 characters:", !!estringLength("brian ketelsen"));
     });
