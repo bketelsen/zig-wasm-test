@@ -6,4 +6,4 @@ wasm:
 	cp src/main.wasm www/wasmtest.wasm
 
 run:
-	cd www && python -m SimpleHTTPServer 8000
+	cd www && ./runserver

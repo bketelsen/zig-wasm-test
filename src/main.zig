@@ -2,9 +2,8 @@ const std = @import("std");
 const mem = @import("std").mem;
 extern fn trace(usize,i32) void;
 extern fn debug(u32) void;
-extern fn __wbindgen_boolean_new(u32) u32;
-extern fn __wbindgen_boolean_get(u32) u32;
-extern fn getObject(u32) u32;
+extern fn runtime_wasmExit(i32) void;
+
 
 export const JSValue = struct {
   idx: u32,
@@ -14,7 +13,7 @@ export const JSValue = struct {
     };
   }
   fn truthy(self: JSValue) bool {
-    const r = __wbindgen_boolean_get(self.idx);
+    const r = 0;
     // yes this is not efficient  
     // did it the long way for debugging
     if (r == 0) { return false; }
@@ -59,6 +58,14 @@ export fn stringLengthIsFive(p: usize, l: u32) bool {
 
 }
 
+export fn run(argc: u32, argv: u32) void {
+  var list = std.ArrayList(u32).init(std.heap.wasm_allocator);
+  defer list.deinit();
+
+  debug(argc);
+  debug(argv);
+  runtime_wasmExit(5);
+}
 
 
 // This should be generated
