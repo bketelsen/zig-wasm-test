@@ -6,4 +6,4 @@ wasm:
 	cp src/main.wasm www/wasmtest.wasm
 
 run:
-	cd www && ./runserver
+	cd www && npx http-server -c-1

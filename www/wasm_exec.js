@@ -115,7 +115,7 @@
 
 			const mem = () => {
 				// The buffer may change when requesting more memory.
-				return new DataView(this._inst.exports.mem.buffer);
+				return new DataView(this._inst.exports.memory.buffer);
 			}
 
 			const setInt64 = (addr, v) => {
@@ -200,10 +200,10 @@
 				mem().setUint32(addr, ref, true);
 			}
 
-			const loadSlice = (addr) => {
-				const array = getInt64(addr + 0);
-				const len = getInt64(addr + 8);
-				return new Uint8Array(this._inst.exports.mem.buffer, array, len);
+			const loadSlice = (ptr,len) => {
+				const array = getInt32(ptr);
+				const length = getInt32(len);
+				return new Uint8Array(this._inst.exports.mem.buffer, array, length);
 			}
 
 			const loadSliceOfValues = (addr) => {
@@ -228,10 +228,14 @@
 					debug: function debug(value) {
 						console.log(value);
 					},
+					debugI64: function debugI64(value) {
+						const val = getInt64(value);
+						console.log(val);
+					},
 					trace: function trace(byteOffset, len) {
 						console.log(byteOffset);
 						var s = '';
-						var a = new Uint8Array(memory.buffer);
+						var a = new Uint8Array(mem.buffer);
 						for (var i = byteOffset; i < len; i++) {
 							s += String.fromCharCode(a[i]);
 						}
@@ -253,7 +257,7 @@
 					},
 
 					// func wasmWrite(fd uintptr, p unsafe.Pointer, n int32)
-					"runtime.wasmWrite": (sp) => {
+					"runtime_wasmWrite": (sp) => {
 						const fd = getInt64(sp + 8);
 						const p = getInt64(sp + 16);
 						const n = mem().getInt32(sp + 24, true);
@@ -261,19 +265,19 @@
 					},
 
 					// func nanotime() int64
-					"runtime.nanotime": (sp) => {
+					"runtime_nanotime": (sp) => {
 						setInt64(sp + 8, (timeOrigin + performance.now()) * 1000000);
 					},
 
 					// func walltime() (sec int64, nsec int32)
-					"runtime.walltime": (sp) => {
+					"runtime_walltime": (sp) => {
 						const msec = (new Date).getTime();
 						setInt64(sp + 8, msec / 1000);
 						mem().setInt32(sp + 16, (msec % 1000) * 1000000, true);
 					},
 
 					// func scheduleTimeoutEvent(delay int64) int32
-					"runtime.scheduleTimeoutEvent": (sp) => {
+					"runtime_scheduleTimeoutEvent": (sp) => {
 						const id = this._nextCallbackTimeoutID;
 						this._nextCallbackTimeoutID++;
 						this._scheduledTimeouts.set(id, setTimeout(
@@ -292,31 +296,31 @@
 					},
 
 					// func clearTimeoutEvent(id int32)
-					"runtime.clearTimeoutEvent": (sp) => {
+					"runtime_clearTimeoutEvent": (sp) => {
 						const id = mem().getInt32(sp + 8, true);
 						clearTimeout(this._scheduledTimeouts.get(id));
 						this._scheduledTimeouts.delete(id);
 					},
 
 					// func getRandomData(r []byte)
-					"runtime.getRandomData": (sp) => {
+					"runtime_getRandomData": (sp) => {
 						crypto.getRandomValues(loadSlice(sp + 8));
 					},
 
 					// func stringVal(value string) ref
-					"syscall/js.stringVal": (sp) => {
+					"stringVal": (sp) => {
 						storeValue(sp + 24, loadString(sp + 8));
 					},
 
 					// func valueGet(v ref, p string) ref
-					"syscall/js.valueGet": (sp) => {
-						const result = Reflect.get(loadValue(sp + 8), loadString(sp + 16));
+					"valueGet": (ptr,prop,len) => {
+						const result = Reflect.get(ptr, loadString(prop,len));
 						sp = this._inst.exports.getsp(); // see comment above
 						storeValue(sp + 32, result);
 					},
 
 					// func valueSet(v ref, p string, x ref)
-					"syscall/js.valueSet": (sp) => {
+					"valueSet": (sp) => {
 						Reflect.set(loadValue(sp + 8), loadString(sp + 16), loadValue(sp + 32));
 					},
 
